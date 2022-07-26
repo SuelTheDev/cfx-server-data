@@ -6,9 +6,7 @@ local currentSeat = 0
 Citizen.CreateThread(function()
 	while true do
 		Citizen.Wait(0)
-
 		local ped = PlayerPedId()
-
 		if not isInVehicle and not IsPlayerDead(PlayerId()) then
 			if DoesEntityExist(GetVehiclePedIsTryingToEnter(ped)) and not isEnteringVehicle then
 				-- trying to enter a vehicle!
