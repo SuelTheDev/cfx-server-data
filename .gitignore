@@ -1,4 +1,5 @@
 *.cfg
-/cache/
-/resources/\[local\]/
+**/cache/**
+**/resources/\[local\]/**
 /db/
+**/node_modules/**
