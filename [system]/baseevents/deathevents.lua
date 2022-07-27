@@ -1,75 +1,46 @@
-Citizen.CreateThread(function()
-    local isDead = false
-    local hasBeenDead = false
-	local diedAt
+local function PedKilledByPlayer(victim, player, weapon, isMelee)
+    print("PedKilledByPlayer", victim, player, weapon, isMelee)
+end
 
-    while true do
-        Wait(15)
+local function PedKilledByPed(victim, attacker, weapon, isMelee)
+    print("PedKilledByPed", victim, attacker, weapon, isMelee)
+end
 
-        local player = PlayerId()
+local function PedKilledByVehicle(victim, attacker)
+    print("PedKilledByVehicle", victim, attacker)
+end
 
-        if NetworkIsPlayerActive(player) then
-            local ped = PlayerPedId()
 
-            if IsPedFatallyInjured(ped) and not isDead then
-                isDead = true
-                if not diedAt then
-                	diedAt = GetGameTimer()
-                end
+local function PedDied(victim, attacker, weapon, isMelee)
+    print("PedDied", victim, attacker, weapon, isMelee)
+end
 
-                local killer, killerweapon = NetworkGetEntityKillerOfPlayer(player)
-				local killerentitytype = GetEntityType(killer)
-				local killertype = -1
-				local killerinvehicle = false
-				local killervehiclename = ''
-                local killervehicleseat = 0
-				if killerentitytype == 1 then
-					killertype = GetPedType(killer)
-					if IsPedInAnyVehicle(killer, false) == 1 then
-						killerinvehicle = true
-						killervehiclename = GetDisplayNameFromVehicleModel(GetEntityModel(GetVehiclePedIsUsing(killer)))
-                        killervehicleseat = GetPedVehicleSeat(killer)
-					else killerinvehicle = false
-					end
-				end
+AddEventHandler('gameEventTriggered', function(event, data)
+    if event == 'CEventNetworkEntityDamage' then
+        local victim = tonumber(data[1])
+        local attacker = tonumber(data[2])
+        local victimDied = tonumber(data[4]) == 1
+        local weapon = tonumber(data[7])
+        local isMelee = tonumber(data[11]) ~= 0
+        -- local vehicleDamageTypeFlag = tonumber(data[12])
+        if victim ~= nil and attacker ~= nil and victim == PlayerPedId() then
+            if victimDied then
+                if IsEntityAPed(victim) and IsPedAPlayer(victim) then
+                    if IsEntityAVehicle(attacker) then
+                        PedKilledByVehicle(victim, attacker)
 
-				local killerid = GetPlayerByEntityID(killer)
-				if killer ~= ped and killerid ~= nil and NetworkIsPlayerActive(killerid) then killerid = GetPlayerServerId(killerid)
-				else killerid = -1
-				end
-
-                if killer == ped or killer == -1 then
-                    TriggerEvent('baseevents:onPlayerDied', killertype, { table.unpack(GetEntityCoords(ped)) })
-                    TriggerServerEvent('baseevents:onPlayerDied', killertype, { table.unpack(GetEntityCoords(ped)) })
-                    hasBeenDead = true
-                else
-                    TriggerEvent('baseevents:onPlayerKilled', killerid, {killertype=killertype, weaponhash = killerweapon, killerinveh=killerinvehicle, killervehseat=killervehicleseat, killervehname=killervehiclename, killerpos={table.unpack(GetEntityCoords(ped))}})
-                    TriggerServerEvent('baseevents:onPlayerKilled', killerid, {killertype=killertype, weaponhash = killerweapon, killerinveh=killerinvehicle, killervehseat=killervehicleseat, killervehname=killervehiclename, killerpos={table.unpack(GetEntityCoords(ped))}})
-                    hasBeenDead = true
-                end
-            elseif not IsPedFatallyInjured(ped) then
-                isDead = false
-                diedAt = nil
-            end
-
-            -- check if the player has to respawn in order to trigger an event
-            if not hasBeenDead and diedAt ~= nil and diedAt > 0 then
-                TriggerEvent('baseevents:onPlayerWasted', { table.unpack(GetEntityCoords(ped)) })
-                TriggerServerEvent('baseevents:onPlayerWasted', { table.unpack(GetEntityCoords(ped)) })
-
-                hasBeenDead = true
-            elseif hasBeenDead and diedAt ~= nil and diedAt <= 0 then
-                hasBeenDead = false
+                    elseif IsEntityAPed(attacker) then
+                        if IsPedAPlayer(attacker) then
+                            local player = NetworkGetPlayerIndexFromPed(attacker)
+                            PedKilledByPlayer(victim, player, weapon, isMelee)
+                        else
+                            PedKilledByPed(victim, attacker, weapon, isMelee)
+                        end
+                    else
+                        PedDied(victim, attacker, weapon, isMelee)
+                    end            
+                end            
             end
         end
     end
 end)
-
-function GetPlayerByEntityID(id)
-    for _, player in ipairs(GetActivePlayers()) do
-        if GetPlayerPed(player) == id then
-            return player
-        end
-    end
-    return nil
-end
