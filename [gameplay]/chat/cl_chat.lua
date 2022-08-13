@@ -3,6 +3,7 @@ local isRDR = not TerraingridActivate and true or false
 local chatInputActive = false
 local chatInputActivating = false
 local chatLoaded = false
+local setChatHide = false
 
 RegisterNetEvent('chatMessage')
 RegisterNetEvent('chat:addTemplate')
@@ -62,6 +63,10 @@ local addMessage = function(message)
     message = message
   })
 end
+
+exports('setHide', function(value)
+  setChatHide = value
+end)
 
 exports('addMessage', addMessage)
 AddEventHandler('chat:addMessage', addMessage)
@@ -256,7 +261,7 @@ Citizen.CreateThread(function()
   local origChatHideState = -1
 
   while true do
-    Wait(0)
+    Wait(100)
 
     if not chatInputActive then
       if IsControlPressed(0, isRDR and `INPUT_MP_TEXT_CHAT_ALL` or 245) --[[ INPUT_MP_TEXT_CHAT_ALL ]] then
@@ -278,7 +283,7 @@ Citizen.CreateThread(function()
     end
 
     if chatLoaded then
-      local forceHide = IsScreenFadedOut() or IsPauseMenuActive()
+      local forceHide = IsScreenFadedOut() or IsPauseMenuActive() or setChatHide
       local wasForceHide = false
 
       if chatHideState ~= CHAT_HIDE_STATES.ALWAYS_HIDE then
